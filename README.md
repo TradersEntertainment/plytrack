@@ -13,8 +13,10 @@ High-speed Polymarket transaction tracking bot for Telegram.
 2. **Railway:** Create a new project from your GitHub repo.
 3. **Environment Variables:** Set the following variables in Railway:
    - `BOT_TOKEN`: Your Telegram Bot Token.
-   - `POLL_INTERVAL`: 5 (Default polling interval).
+   - `POLL_INTERVAL`: 5
    - `DB_PATH`: `data/bot.db`
+   - `DEFAULT_CHAT_ID`: Your group Chat ID (e.g., `-100...`).
+   - `DEFAULT_WALLET`: The wallet address to track by default.
 4. **Volumes (Persistent Data):** 
    - Since SQLite is used, adding a Railway Volume mounted at `/app/data` is recommended to keep tracked wallets across deployments.
 

@@ -17,6 +17,7 @@ async def run_bot():
     try:
         # Initialize DB
         await init_db()
+        await ensure_default_track()
         
         # Initialize bot and dispatcher
         bot = Bot(token=BOT_TOKEN)

@@ -122,3 +122,29 @@ async def update_last_seen(user_id: int, address: str, trade_id: str, timestamp:
             (trade_id, timestamp, user_id, address)
         )
         await db.commit()
+
+async def ensure_default_track():
+    """Seeds the DB with default tracking targets from env variables if provided."""
+    from config import DEFAULT_CHAT_ID, DEFAULT_WALLET
+    if not DEFAULT_CHAT_ID or not DEFAULT_WALLET:
+        return
+    
+    try:
+        chat_id = int(DEFAULT_CHAT_ID)
+        address = DEFAULT_WALLET.lower()
+        
+        async with aiosqlite.connect(DB_PATH) as db:
+            # Ensure folder exists
+            db_dir = os.path.dirname(DB_PATH)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir)
+                
+            await db.execute('INSERT OR IGNORE INTO users (user_id) VALUES (?)', (chat_id,))
+            await db.execute(
+                'INSERT OR IGNORE INTO tracked_wallets (user_id, address) VALUES (?, ?)',
+                (chat_id, address)
+            )
+            await db.commit()
+            print(f"Default track initialized for {address} in chat {chat_id}")
+    except Exception as e:
+        print(f"Error seeding default track: {e}")
