@@ -36,6 +36,20 @@ async def on_startup(app: web.Application):
     
     # Start polling (non-blocking)
     asyncio.create_task(dp.start_polling(bot))
+    
+    # Send startup notification to tracked chats
+    try:
+        from config import DEFAULT_CHAT_ID
+        if DEFAULT_CHAT_ID:
+            chat_id = int(DEFAULT_CHAT_ID.strip().replace('"', '').replace("'", ""))
+            await bot.send_message(
+                chat_id, 
+                "⚡ <b>Bot aktif!</b>\n🔄 Poll: 2sn | Paralel mod", 
+                parse_mode="HTML"
+            )
+    except Exception as e:
+        logging.warning(f"Startup msg failed: {e}")
+    
     logging.info(f"🚀 Bot & Dashboard live on port {PORT}")
 
 async def on_shutdown(app: web.Application):
