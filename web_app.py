@@ -2,8 +2,6 @@ import os
 import json
 import logging
 from aiohttp import web
-import aiohttp_jinja2
-import jinja2
 from config import WEB_PASSWORD, PORT, DB_PATH
 from db import get_tracked_wallets, add_tracked_wallet, remove_tracked_wallet
 
