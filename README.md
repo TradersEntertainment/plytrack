@@ -17,6 +17,12 @@ High-speed Polymarket transaction tracking bot for Telegram.
    - `DB_PATH`: `data/bot.db`
    - `DEFAULT_CHAT_ID`: Your group Chat ID (e.g., `-100...`).
    - `DEFAULT_WALLET`: The wallet address to track by default.
+   - `WEB_PASSWORD`: A password to access the Web Dashboard (Default: `admin123`).
+
+## 🖥️ Web Dashboard
+Manage your wallets via a premium web interface:
+1. Open `https://your-app-name.railway.app/?pw=YOUR_PASSWORD`
+2. You can view, add, and remove tracking targets in real-time.
 4. **Volumes (Persistent Data):** 
    - Since SQLite is used, adding a Railway Volume mounted at `/app/data` is recommended to keep tracked wallets across deployments.
 

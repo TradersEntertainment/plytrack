@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polytrack Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0b10;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --accent: #00f2ff;
+            --accent-glow: rgba(0, 242, 255, 0.3);
+            --danger: #ff4d4d;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            background-image: radial-gradient(circle at 50% -20%, #1a1c2e, transparent);
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-weight: 600;
+            font-size: 2.5rem;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #00f2ff, #7000ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 18px;
+            color: white;
+            flex: 1;
+            min-width: 200px;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--accent-glow);
+            filter: brightness(1.1);
+        }
+
+        button.btn-danger {
+            background: rgba(255, 77, 77, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        button.btn-danger:hover {
+            background: var(--danger);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 77, 77, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td {
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.95rem;
+        }
+
+        .address-col {
+            font-family: monospace;
+            color: var(--accent);
+        }
+
+        .chat-id-col {
+            color: var(--text-dim);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        .loading {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 20px;
+        }
+
+        #message {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Polytrack Dashboard</h1>
+            <div class="subtitle"><span class="status-dot"></span> System Live & Monitoring</div>
+        </header>
+
+        <section class="card">
+            <h3 style="margin-bottom: 20px;">Follow New Wallet</h3>
+            <div class="form-group">
+                <input type="text" id="walletAddr" placeholder="Format: 0x... or Profile Link">
+                <input type="text" id="chatId" placeholder="Telegram Chat ID">
+                <button onclick="addWallet()">Add Target</button>
+            </div>
+            <div id="message"></div>
+        </section>
+
+        <section class="card">
+            <h3 style="margin-bottom: 20px;">Active Trackers</h3>
+            <div id="walletList">
+                <div class="loading">Fetching records...</div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const getPW = () => new URLSearchParams(window.location.search).get('pw');
+        const pw = getPW();
+
+        async def fetchWallets() {
+            try {
+                const resp = await fetch(`/api/wallets?pw=${pw}`);
+                const data = await resp.json();
+                
+                if (data.error) {
+                    document.getElementById('walletList').innerHTML = `<div class="loading" style="color:var(--danger)">${data.error}</div>`;
+                    return;
+                }
+
+                renderTable(data.wallets);
+            } catch (e) {
+                document.getElementById('walletList').innerHTML = `<div class="loading">Connection Error</div>`;
+            }
+        }
+
+        function renderTable(wallets) {
+            if (!wallets || wallets.length === 0) {
+                document.getElementById('walletList').innerHTML = '<div class="loading">No active trackers.</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Address</th><th>Chat ID</th><th>Action</th></tr></thead><tbody>';
+            wallets.forEach(w => {
+                html += `
+                    <tr>
+                        <td class="address-col">${w.address}</td>
+                        <td class="chat-id-col">${w.user_id}</td>
+                        <td style="text-align:right">
+                            <button class="btn-danger" onclick="removeWallet('${w.address}', '${w.user_id}')">Remove</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            html += '</tbody></table>';
+            document.getElementById('walletList').innerHTML = html;
+        }
+
+        async function addWallet() {
+            const address = document.getElementById('walletAddr').value.trim();
+            const chat_id = document.getElementById('chatId').value.trim();
+            const msgEl = document.getElementById('message');
+
+            if (!address || !chat_id) {
+                msgEl.style.color = 'var(--danger)';
+                msgEl.innerText = 'Please fill both fields.';
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/track?pw=${pw}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ address, chat_id })
+                });
+                const data = await resp.json();
+                
+                if (data.success) {
+                    msgEl.style.color = var(--accent);
+                    msgEl.innerText = '✅ Wallet added successfully!';
+                    document.getElementById('walletAddr').value = '';
+                    fetchWallets();
+                } else {
+                    msgEl.style.color = 'var(--danger)';
+                    msgEl.innerText = data.error || 'Failed to add wallet.';
+                }
+            } catch (e) {
+                msgEl.innerText = 'Error connecting to server.';
+            }
+        }
+
+        async function removeWallet(address, chat_id) {
+            if (!confirm(`Stop tracking ${address}?`)) return;
+
+            try {
+                const resp = await fetch(`/api/untrack?pw=${pw}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ address, chat_id })
+                });
+                fetchWallets();
+            } catch (e) {
+                alert('Connection Error');
+            }
+        }
+
+        // Initial fetch
+        fetchWallets();
+    </script>
+</body>
+</html>

@@ -13,3 +13,7 @@ POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", 5))
 # Optional Deployment Defaults
 DEFAULT_CHAT_ID = os.getenv("DEFAULT_CHAT_ID")
 DEFAULT_WALLET = os.getenv("DEFAULT_WALLET")
+
+# Web Dashboard Settings
+WEB_PASSWORD = os.getenv("WEB_PASSWORD", "admin123")
+PORT = int(os.getenv("PORT", 8080)) # Railway provides PORT automatically
