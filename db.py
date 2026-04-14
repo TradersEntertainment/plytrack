@@ -127,14 +127,16 @@ async def ensure_default_track():
     """Seeds the DB with default tracking targets from env variables if provided."""
     from config import DEFAULT_CHAT_ID, DEFAULT_WALLET
     if not DEFAULT_CHAT_ID or not DEFAULT_WALLET:
+        logging.info("No default track settings found in environment variables.")
         return
     
     try:
-        chat_id = int(DEFAULT_CHAT_ID)
-        address = DEFAULT_WALLET.lower()
+        # Robust parsing: strip quotes or spaces if user added them in Railway UI
+        chat_id_str = DEFAULT_CHAT_ID.strip().replace('"', '').replace("'", "")
+        chat_id = int(chat_id_str)
+        address = DEFAULT_WALLET.strip().replace('"', '').replace("'", "").lower()
         
         async with aiosqlite.connect(DB_PATH) as db:
-            # Ensure folder exists
             db_dir = os.path.dirname(DB_PATH)
             if db_dir and not os.path.exists(db_dir):
                 os.makedirs(db_dir)
@@ -145,6 +147,6 @@ async def ensure_default_track():
                 (chat_id, address)
             )
             await db.commit()
-            print(f"Default track initialized for {address} in chat {chat_id}")
+            logging.info(f"✅ SUCCESS: Default track initialized for {address} in chat {chat_id}")
     except Exception as e:
-        print(f"Error seeding default track: {e}")
+        logging.error(f"❌ ERROR seeding default track: {e}")
