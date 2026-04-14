@@ -1,6 +1,7 @@
 import aiosqlite
 import os
 import atexit
+import logging
 from config import DB_PATH
 
 DB_DIR = os.path.dirname(DB_PATH)
