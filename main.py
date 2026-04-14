@@ -37,16 +37,45 @@ async def on_startup(app: web.Application):
     # Start polling (non-blocking)
     asyncio.create_task(dp.start_polling(bot))
     
-    # Send startup notification to tracked chats
+    # Send startup notification with latest trade verification
     try:
-        from config import DEFAULT_CHAT_ID
-        if DEFAULT_CHAT_ID:
+        from config import DEFAULT_CHAT_ID, DEFAULT_WALLET
+        if DEFAULT_CHAT_ID and DEFAULT_WALLET:
             chat_id = int(DEFAULT_CHAT_ID.strip().replace('"', '').replace("'", ""))
-            await bot.send_message(
-                chat_id, 
-                "⚡ <b>Bot aktif!</b>\n🔄 Poll: 2sn | Paralel mod", 
-                parse_mode="HTML"
-            )
+            wallet = DEFAULT_WALLET.strip().replace('"', '').replace("'", "").lower()
+            
+            # Fetch latest trade to verify API connectivity
+            import aiohttp, time
+            async with aiohttp.ClientSession() as session:
+                params = {"user": wallet, "limit": 1, "_": int(time.time() * 1000)}
+                async with session.get(
+                    "https://data-api.polymarket.com/activity", 
+                    params=params
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        trades = [t for t in data if t.get("type") == "TRADE"]
+                        if trades:
+                            t = trades[0]
+                            title = t.get("title", "?")
+                            outcome = t.get("outcome", "?")
+                            price = float(t.get("price", 0))
+                            size = float(t.get("size", 0))
+                            total = round(size * price, 2)
+                            
+                            msg = f"⚡ <b>Bot aktif!</b>\n"
+                            msg += f"🔄 Poll: 2sn | Paralel mod\n\n"
+                            msg += f"✅ API bağlantısı OK\n"
+                            msg += f"📊 Son işlem:\n"
+                            msg += f"<b>{total}$</b> | {outcome}\n"
+                            msg += f"{title}\n"
+                            msg += f"💰 {price:.3f}$"
+                        else:
+                            msg = "⚡ <b>Bot aktif!</b>\n🔄 Poll: 2sn | Paralel mod\n\n✅ API OK — henüz işlem yok"
+                    else:
+                        msg = f"⚡ <b>Bot aktif!</b>\n🔄 Poll: 2sn | Paralel mod\n\n⚠️ API yanıt: HTTP {resp.status}"
+            
+            await bot.send_message(chat_id, msg, parse_mode="HTML")
     except Exception as e:
         logging.warning(f"Startup msg failed: {e}")
     
