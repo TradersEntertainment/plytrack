@@ -22,7 +22,8 @@ async def cmd_start(message: Message):
         "<b>Komutlar:</b>\n"
         "/track &lt;adres_veya_link&gt; - Yeni bir cüzdan takip et\n"
         "/untrack &lt;adres_veya_link&gt; - Cüzdan takibini bırak\n"
-        "/list - Takip ettiğin tüm cüzdanları gör"
+        "/list - Takip ettiğin tüm cüzdanları gör\n"
+        "/last - En son yakalanan işlemi göster"
     )
     await message.answer(welcome_msg, parse_mode="HTML")
 
@@ -77,3 +78,36 @@ async def cmd_list(message: Message):
         msg += f"- <code>{w}</code>\n"
     
     await message.answer(msg, parse_mode="HTML")
+
+@router.message(Command("last"))
+async def cmd_last(message: Message):
+    import aiosqlite
+    from config import DB_PATH
+    from datetime import datetime
+    
+    chat_id = message.chat.id
+    
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        # Get the newest activity for any wallet tracked in this chat
+        query = '''
+            SELECT h.* FROM activity_history h
+            JOIN tracked_wallets w ON h.address = w.address
+            WHERE w.user_id = ?
+            ORDER BY h.timestamp DESC LIMIT 1
+        '''
+        cursor = await db.execute(query, (chat_id,))
+        row = await cursor.fetchone()
+        
+        if not row:
+            await message.answer("🔍 Henüz kayıtlı bir işlem bulunamadı. Botun yeni bir işlem yakalamasını beklemelisin veya veritabanı sıfırlanmış olabilir.")
+            return
+        
+        dt = datetime.fromtimestamp(row['timestamp']).strftime('%H:%M:%S')
+        
+        resp = "🕒 <b>Son Yakalanan İşlem:</b>\n\n"
+        resp += f"👤 Cüzdan: <code>{row['address']}</code>\n"
+        resp += f"⏰ Zaman: {dt}\n"
+        resp += f"🔗 Link: <a href='https://polygonscan.com/tx/{row['tx_hash']}'>PolygonScan Üzerinde Gör</a>"
+        
+        await message.answer(resp, parse_mode="HTML", disable_web_page_preview=True)
