@@ -3,7 +3,7 @@ import logging
 import traceback
 from aiogram import Bot, Dispatcher
 from config import BOT_TOKEN
-from db import init_db
+from db import init_db, ensure_default_track
 from handlers import router
 from tracker import tracker_loop
 
