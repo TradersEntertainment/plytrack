@@ -75,7 +75,10 @@ async def cmd_list(message: Message):
         
     msg = "<b>Takip Ettiğiniz Cüzdanlar:</b>\n"
     for w in wallets:
-        msg += f"- <code>{w}</code>\n"
+        if w['nickname']:
+            msg += f"- <b>{w['nickname']}</b>: <code>{w['address']}</code>\n"
+        else:
+            msg += f"- <code>{w['address']}</code>\n"
     
     await message.answer(msg, parse_mode="HTML")
 
@@ -91,7 +94,7 @@ async def cmd_last(message: Message):
         db.row_factory = aiosqlite.Row
         # Get the newest activity for any wallet tracked in this chat
         query = '''
-            SELECT h.* FROM activity_history h
+            SELECT h.*, w.nickname FROM activity_history h
             JOIN tracked_wallets w ON h.address = w.address
             WHERE w.user_id = ?
             ORDER BY h.timestamp DESC LIMIT 1
@@ -105,8 +108,10 @@ async def cmd_last(message: Message):
         
         dt = datetime.fromtimestamp(row['timestamp']).strftime('%H:%M:%S')
         
+        name_display = f"👤 Cüzdan: <b>{row['nickname']}</b> (<code>{row['address']}</code>)" if row['nickname'] else f"👤 Cüzdan: <code>{row['address']}</code>"
+        
         resp = "🕒 <b>Son Yakalanan İşlem:</b>\n\n"
-        resp += f"👤 Cüzdan: <code>{row['address']}</code>\n"
+        resp += f"{name_display}\n"
         resp += f"⏰ Zaman: {dt}\n"
         resp += f"🔗 Link: <a href='https://polygonscan.com/tx/{row['tx_hash']}'>PolygonScan Üzerinde Gör</a>"
         

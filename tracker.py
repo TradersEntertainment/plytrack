@@ -20,7 +20,7 @@ HEADERS = {
     "Pragma": "no-cache",
 }
 
-def format_telegram_message(wallet: str, trade: dict) -> str:
+def format_telegram_message(wallet: str, trade: dict, nickname: str = None) -> str:
     """Format trade dictionary into a readable Telegram message for mobile users."""
     side = trade.get("side", "UNKNOWN").upper()
     size = float(trade.get("size", 0))
@@ -47,10 +47,12 @@ def format_telegram_message(wallet: str, trade: dict) -> str:
         display_title = f"{parts[0]}\n⏰ {parts[1]}"
     
     # Notification-friendly format (Visible on lock screen)
+    name_display = f"👤 <b>{nickname}</b> (<code>{wallet}</code>)" if nickname else f"👤 <code>{wallet}</code>"
+    
     msg = f"{emoji} <b>{total_spent}$</b> | <b>{outcome}</b>\n"
     msg += f"📊 {display_title}\n"
     msg += f"💰 Fiyat: <b>{price:.3f}$</b>\n\n"
-    msg += f"👤 <code>{wallet}</code>"
+    msg += name_display
     
     return msg
 
@@ -79,6 +81,7 @@ async def process_wallet(bot: Bot, session: aiohttp.ClientSession, record: dict)
     """Process a single wallet - check for new trades and send notifications."""
     user_id = record['user_id']
     address = record['address']
+    nickname = record.get('nickname')
     
     trades = await fetch_recent_trades(session, address)
     if not trades:
@@ -101,7 +104,7 @@ async def process_wallet(bot: Bot, session: aiohttp.ClientSession, record: dict)
     for trade in reversed(new_trades):
         try:
             tx_hash = trade.get("transactionHash")
-            msg = format_telegram_message(address, trade)
+            msg = format_telegram_message(address, trade, nickname)
             await bot.send_message(user_id, msg, parse_mode="HTML")
             await record_activity(address, tx_hash, trade.get("timestamp"))
         except Exception as e:

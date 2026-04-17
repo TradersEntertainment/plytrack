@@ -84,24 +84,32 @@ async def get_user_tracked_wallets(user_id: int):
     result = []
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute('SELECT address FROM tracked_wallets WHERE user_id = ?', (user_id,)) as cursor:
+        async with db.execute('SELECT address, nickname FROM tracked_wallets WHERE user_id = ?', (user_id,)) as cursor:
             async for row in cursor:
-                result.append(row['address'])
+                result.append({'address': row['address'], 'nickname': row['nickname']})
     return result
 
-async def add_tracked_wallet(user_id: int, address: str):
+async def add_tracked_wallet(user_id: int, address: str, nickname: str = None):
     address = address.lower()
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute('INSERT OR IGNORE INTO users (user_id) VALUES (?)', (user_id,))
         try:
             await db.execute(
-                'INSERT INTO tracked_wallets (user_id, address) VALUES (?, ?)',
-                (user_id, address)
+                'INSERT INTO tracked_wallets (user_id, address, nickname) VALUES (?, ?, ?)',
+                (user_id, address, nickname)
             )
             await db.commit()
             return True
         except aiosqlite.IntegrityError:
-            return False # Already tracking
+            # If already exists, update nickname if provided
+            if nickname:
+                await db.execute(
+                    'UPDATE tracked_wallets SET nickname = ? WHERE user_id = ? AND address = ?',
+                    (nickname, user_id, address)
+                )
+                await db.commit()
+                return True
+            return False # Already tracking and no new nick
 
 async def remove_tracked_wallet(user_id: int, address: str):
     address = address.lower()
